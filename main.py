@@ -2,8 +2,9 @@ import os
 import yt_dlp
 import snscrape.modules.twitter as sntwitter
 import asyncio
-from aiogram import Bot, Dispatcher, types
+from aiogram import Bot, Dispatcher, types, Router
 from aiogram.types import Message
+from aiogram.filters import Command
 from dotenv import load_dotenv
 
 # Загружаем токен из .env
@@ -12,6 +13,8 @@ TOKEN = os.getenv("BOT_TOKEN")
 
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
+router = Router()  # Новый router
+dp.include_router(router)  # Подключаем router
 
 def get_video_url(tweet_url):
     """Получаем ссылку на видео из твита"""
@@ -46,11 +49,11 @@ def download_video(video_url, message):
         ydl.download([video_url])
     return output_path
 
-@dp.message_handler(commands=["start"])
+@router.message(Command("start"))  # Используем router
 async def start_cmd(message: Message):
     await message.reply("👋 Привет! Отправь мне ссылку на твит с видео, и я скачаю его в наилучшем качестве.")
 
-@dp.message_handler(lambda message: "twitter.com" in message.text)
+@router.message(lambda message: "twitter.com" in message.text)  # Используем router
 async def handle_twitter_video(message: Message):
     tweet_url = message.text.strip()
     status_message = await message.reply("🔍 Ищу видео...")
@@ -66,7 +69,7 @@ async def handle_twitter_video(message: Message):
     await message.reply_video(video=open(video_path, "rb"))
     os.remove(video_path)
 
-@dp.message_handler()
+@router.message()  # Используем router
 async def unknown_message(message: Message):
     await message.reply("🚀 Отправь мне ссылку на видео из Twitter!")
 
