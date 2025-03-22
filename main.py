@@ -22,8 +22,9 @@ async def download_video(tweet_url):
         "outtmpl": output_path,
         "format": "best",  # Максимальное качество
     }
+    loop = asyncio.get_running_loop()
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        ydl.download([tweet_url])
+        await loop.run_in_executor(None, ydl.download, [tweet_url])
     return output_path
 
 @router.message(Command("start"))
@@ -36,7 +37,7 @@ async def handle_twitter_video(message: Message):
     status_message = await message.reply("⏬ Загружаю видео...")
 
     try:
-        video_path = await asyncio.to_thread(download_video, tweet_url)
+        video_path = await download_video(tweet_url)  # ✅ Ожидаем выполнение функции
         await message.reply_video(video=open(video_path, "rb"))
         os.remove(video_path)
     except Exception as e:
