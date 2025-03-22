@@ -9,6 +9,7 @@ from dotenv import load_dotenv
 # Загружаем токен из .env
 load_dotenv()
 TOKEN = os.getenv("BOT_TOKEN")
+COOKIES_FILE = "cookies.txt"  # Указываем путь к cookies
 
 bot = Bot(token=TOKEN)
 dp = Dispatcher()
@@ -16,11 +17,12 @@ router = Router()
 dp.include_router(router)
 
 async def download_video(tweet_url):
-    """Скачиваем видео с X (Twitter) в наилучшем качестве"""
+    """Скачиваем видео с X (Twitter) с авторизацией через cookies"""
     output_path = "video.mp4"
     ydl_opts = {
         "outtmpl": output_path,
         "format": "best",  # Максимальное качество
+        "cookies": COOKIES_FILE,  # Используем cookies
     }
 
     await asyncio.to_thread(lambda: yt_dlp.YoutubeDL(ydl_opts).download([tweet_url]))
@@ -37,10 +39,10 @@ async def handle_twitter_video(message: Message):
     status_message = await message.reply("⏬ Загружаю видео...")
 
     try:
-        video_path = await download_video(tweet_url)  # ✅ Ждём завершения загрузки
-        video = FSInputFile(video_path, filename="twitter_video.mp4")  # ✅ Используем FSInputFile правильно
+        video_path = await download_video(tweet_url)
+        video = FSInputFile(video_path, filename="twitter_video.mp4")
         await message.reply_video(video)
-        os.remove(video_path)  # Удаляем после отправки
+        os.remove(video_path)
     except Exception as e:
         await status_message.edit_text(f"❌ Ошибка: {e}")
 
