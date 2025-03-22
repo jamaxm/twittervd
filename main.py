@@ -2,7 +2,7 @@ import os
 import yt_dlp
 import asyncio
 from aiogram import Bot, Dispatcher, types, Router
-from aiogram.types import Message
+from aiogram.types import Message, FSInputFile
 from aiogram.filters import Command
 from dotenv import load_dotenv
 
@@ -23,7 +23,6 @@ async def download_video(tweet_url):
         "format": "best",  # Максимальное качество
     }
 
-    # Выполняем `yt-dlp` в фоне
     await asyncio.to_thread(lambda: yt_dlp.YoutubeDL(ydl_opts).download([tweet_url]))
     
     return output_path
@@ -39,8 +38,8 @@ async def handle_twitter_video(message: Message):
 
     try:
         video_path = await download_video(tweet_url)  # ✅ Ждём завершения загрузки
-        with open(video_path, "rb") as video:
-            await message.reply_video(video)
+        video = FSInputFile(video_path)  # ✅ Используем FSInputFile
+        await message.reply_video(video)
         os.remove(video_path)  # Удаляем после отправки
     except Exception as e:
         await status_message.edit_text(f"❌ Ошибка: {e}")
