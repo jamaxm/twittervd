@@ -1,7 +1,7 @@
 import os
 import yt_dlp
 import asyncio
-from aiogram import Bot, Dispatcher, types, Router
+from aiogram import Bot, Dispatcher, Router
 from aiogram.types import Message, FSInputFile
 from aiogram.filters import Command
 from dotenv import load_dotenv
@@ -38,7 +38,7 @@ async def handle_twitter_video(message: Message):
 
     try:
         video_path = await download_video(tweet_url)  # ✅ Ждём завершения загрузки
-        video = FSInputFile(video_path)  # ✅ Используем FSInputFile
+        video = FSInputFile(video_path, filename="twitter_video.mp4")  # ✅ Используем FSInputFile правильно
         await message.reply_video(video)
         os.remove(video_path)  # Удаляем после отправки
     except Exception as e:
