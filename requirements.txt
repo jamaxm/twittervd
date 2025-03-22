@@ -1,0 +1,4 @@
+aiogram
+yt-dlp
+snscrape
+python-dotenv
