@@ -3,7 +3,7 @@ import yt_dlp
 import snscrape.modules.twitter as sntwitter
 import asyncio
 from aiogram import Bot, Dispatcher, types
-from aiogram.types import ChatActions
+from aiogram.types import Message
 from aiogram.utils import executor
 from dotenv import load_dotenv
 
@@ -31,6 +31,7 @@ async def progress_hook(d):
     """Обновляем статус скачивания"""
     if d["status"] == "downloading":
         percent = d.get("_percent_str", "0%")
+        await bot.send_chat_action(chat_id=d["message"].chat.id, action=types.ChatAction.TYPING)
         await d["message"].edit_text(f"⏬ Загрузка видео... {percent}")
 
 def download_video(video_url, message):
@@ -38,8 +39,8 @@ def download_video(video_url, message):
     output_path = "video.mp4"
     ydl_opts = {
         "outtmpl": output_path,
-        "format": "bestvideo+bestaudio/best",  # Выбираем наилучшее качество
-        "merge_output_format": "mp4",  # Если видео и аудио отдельные — объединяем
+        "format": "bestvideo+bestaudio/best",  # Максимальное качество
+        "merge_output_format": "mp4",
         "progress_hooks": [lambda d: asyncio.run(progress_hook({**d, "message": message}))],
     }
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -47,11 +48,11 @@ def download_video(video_url, message):
     return output_path
 
 @dp.message_handler(commands=["start"])
-async def start_cmd(message: types.Message):
+async def start_cmd(message: Message):
     await message.reply("👋 Привет! Отправь мне ссылку на твит с видео, и я скачаю его в наилучшем качестве.")
 
 @dp.message_handler(lambda message: "twitter.com" in message.text)
-async def handle_twitter_video(message: types.Message):
+async def handle_twitter_video(message: Message):
     tweet_url = message.text.strip()
     status_message = await message.reply("🔍 Ищу видео...")
 
@@ -67,7 +68,7 @@ async def handle_twitter_video(message: types.Message):
     os.remove(video_path)
 
 @dp.message_handler()
-async def unknown_message(message: types.Message):
+async def unknown_message(message: Message):
     await message.reply("🚀 Отправь мне ссылку на видео из Twitter!")
 
 if __name__ == "__main__":
