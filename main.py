@@ -4,7 +4,6 @@ import snscrape.modules.twitter as sntwitter
 import asyncio
 from aiogram import Bot, Dispatcher, types
 from aiogram.types import Message
-from aiogram.utils import executor
 from dotenv import load_dotenv
 
 # Загружаем токен из .env
@@ -12,7 +11,7 @@ load_dotenv()
 TOKEN = os.getenv("BOT_TOKEN")
 
 bot = Bot(token=TOKEN)
-dp = Dispatcher(bot)
+dp = Dispatcher()
 
 def get_video_url(tweet_url):
     """Получаем ссылку на видео из твита"""
@@ -71,5 +70,8 @@ async def handle_twitter_video(message: Message):
 async def unknown_message(message: Message):
     await message.reply("🚀 Отправь мне ссылку на видео из Twitter!")
 
+async def main():
+    await dp.start_polling(bot)
+
 if __name__ == "__main__":
-    executor.start_polling(dp)
+    asyncio.run(main())
