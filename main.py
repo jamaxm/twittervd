@@ -1,60 +1,59 @@
 import os
-import yt_dlp
 import asyncio
-from aiogram import Bot, Dispatcher, Router
-from aiogram.types import Message, FSInputFile
+import yt_dlp
+from aiogram import Bot, Dispatcher, types
+from aiogram.types import InputFile
 from aiogram.filters import Command
 from dotenv import load_dotenv
 
-# Загружаем токен из .env
+# Загружаем переменные окружения
 load_dotenv()
-TOKEN = os.getenv("BOT_TOKEN")
-COOKIES_FILE = "cookies.txt"  # Путь к cookies
 
-bot = Bot(token=TOKEN)
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+TWITTER_USERNAME = os.getenv("TWITTER_USERNAME")
+TWITTER_PASSWORD = os.getenv("TWITTER_PASSWORD")
+
+bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
-router = Router()
-dp.include_router(router)
 
-async def download_video(tweet_url):
-    """Скачиваем видео с X (Twitter) с авторизацией"""
-    output_path = "video.mp4"
-    ydl_opts = {
-        "outtmpl": output_path,
-        "format": "best",  # Максимальное качество
-        "cookies": COOKIES_FILE,  # Используем cookies
-        "noprogress": True,  # Отключаем прогресс-бар
+# Функция загрузки видео
+async def download_twitter_video(url):
+    options = {
+        "outtmpl": "video.mp4",  # Сохранение видео как video.mp4
+        "format": "best",  # Лучшее качество
+        "username": TWITTER_USERNAME,
+        "password": TWITTER_PASSWORD
     }
 
-    await asyncio.to_thread(lambda: yt_dlp.YoutubeDL(ydl_opts).download([tweet_url]))
-    
-    return output_path
+    with yt_dlp.YoutubeDL(options) as ydl:
+        ydl.download([url])
 
-@router.message(Command("start"))
-async def start_cmd(message: Message):
-    await message.reply("👋 Привет! Отправь мне ссылку на видео из X (Twitter), и я скачаю его в наилучшем качестве.")
+# Обработчик команды /start
+@dp.message(Command("start"))
+async def start(message: types.Message):
+    await message.answer("Привет! Отправь ссылку на видео с Twitter, и я скачаю его для тебя.")
 
-@router.message(lambda message: "x.com" in message.text or "twitter.com" in message.text)
-async def handle_twitter_video(message: Message):
-    tweet_url = message.text.strip()
-    status_message = await message.reply("⏬ Загружаю видео...")
+# Обработчик ссылок
+@dp.message()
+async def handle_message(message: types.Message):
+    url = message.text.strip()
 
-    try:
-        if not os.path.exists(COOKIES_FILE):
-            await status_message.edit_text("❌ Ошибка: файл cookies.txt не найден. Скачивание NSFW-видео невозможно.")
-            return
+    if "x.com" in url or "twitter.com" in url:
+        await message.answer("⏳ Загружаю видео, подожди немного...")
+        
+        try:
+            await download_twitter_video(url)
+            video = InputFile("video.mp4")
+            await message.answer_video(video, caption="✅ Вот твое видео!")
+            os.remove("video.mp4")  # Удаляем файл после отправки
+            
+        except Exception as e:
+            await message.answer(f"❌ Ошибка: {str(e)}")
 
-        video_path = await download_video(tweet_url)
-        video = FSInputFile(video_path, filename="twitter_video.mp4")
-        await message.reply_video(video)
-        os.remove(video_path)
-    except Exception as e:
-        await status_message.edit_text(f"❌ Ошибка: {e}")
+    else:
+        await message.answer("⚠ Отправь ссылку на видео из Twitter (X).")
 
-@router.message()
-async def unknown_message(message: Message):
-    await message.reply("🚀 Отправь мне ссылку на видео из X (Twitter)!")
-
+# Запуск бота
 async def main():
     await dp.start_polling(bot)
 
