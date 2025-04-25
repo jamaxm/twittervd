@@ -167,7 +167,7 @@ async def error_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 def main():
     """Запуск бота"""
-    application = Application.builder().token('8126052267:AAG2jrP7z6SeBkNKEiJ_aOb-3sR_pTr9t_w').build()
+    application = Application.builder().token('7851119686:AAEbT-x-xak7IlXYW0uGtsbprZKr7YqhJog').build()
 
     # Регистрация обработчиков
     application.add_handler(CommandHandler("start", start))
